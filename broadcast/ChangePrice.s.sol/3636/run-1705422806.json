@@ -1,0 +1,64 @@
+{
+  "transactions": [
+    {
+      "hash": "0xdad64ee86fdacc79a80d0036a7ef30fc38c99d603d58b3e0a1f350243301fcd9",
+      "transactionType": "CALL",
+      "contractName": null,
+      "contractAddress": "0x9DC46D3bb1f305A2326F390756D3fbE37fBc6421",
+      "function": null,
+      "arguments": null,
+      "rpc": "http://127.0.0.1:3000/",
+      "transaction": {
+        "type": "0x00",
+        "from": "0x150cc4f90516c23e64231d2b92d737893dbb2515",
+        "to": "0x9dc46d3bb1f305a2326f390756d3fbe37fbc6421",
+        "gas": "0x8bfe",
+        "value": "0x0",
+        "data": "0x0fdb11cf",
+        "nonce": "0x45"
+      },
+      "additionalContracts": [],
+      "isFixedGasLimit": false
+    }
+  ],
+  "receipts": [
+    {
+      "transactionHash": "0xdad64ee86fdacc79a80d0036a7ef30fc38c99d603d58b3e0a1f350243301fcd9",
+      "transactionIndex": "0x0",
+      "blockHash": "0x4a86d03bbc1496a3825f3ff397d0fc642ae77e9852bda5f1ffbbeeae3c16ed0b",
+      "blockNumber": "0x18ad0",
+      "from": "0x150CC4F90516C23e64231D2B92d737893DBb2515",
+      "to": "0x9DC46D3bb1f305A2326F390756D3fbE37fBc6421",
+      "cumulativeGasUsed": "0x5fb9",
+      "gasUsed": "0x5fb9",
+      "contractAddress": null,
+      "logs": [
+        {
+          "address": "0x9DC46D3bb1f305A2326F390756D3fbE37fBc6421",
+          "topics": [
+            "0x4d29de21de555af78a62fc82dd4bc05e9ae5b0660a37f04729527e0f22780cd3"
+          ],
+          "data": "0x00000000000000000000000000000000000000000000000ad78ebc5ac6200000",
+          "blockHash": "0x4a86d03bbc1496a3825f3ff397d0fc642ae77e9852bda5f1ffbbeeae3c16ed0b",
+          "blockNumber": "0x18ad0",
+          "transactionHash": "0xdad64ee86fdacc79a80d0036a7ef30fc38c99d603d58b3e0a1f350243301fcd9",
+          "transactionIndex": "0x0",
+          "logIndex": "0x0",
+          "transactionLogIndex": "0x0",
+          "removed": false
+        }
+      ],
+      "status": "0x1",
+      "logsBloom": "0x00000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000408000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "effectiveGasPrice": "0x40e5095b"
+    }
+  ],
+  "libraries": [],
+  "pending": [],
+  "path": "/Users/prajwalghate/Documents/Work/Private/Rivera/stablecoin/pall_foundry/broadcast/ChangePrice.s.sol/3636/run-latest.json",
+  "returns": {},
+  "timestamp": 1705422806,
+  "chain": 3636,
+  "multi": false,
+  "commit": "99f506c"
+}
