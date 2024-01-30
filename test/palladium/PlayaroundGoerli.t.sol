@@ -1,7 +1,7 @@
 /*command Sequence
 * anvil -f https://goerli.infura.io/v3/ad9cef41c9c844a7b54d10be24d416e5 --mnemonic ".seed mnemonic"  --port 3000
 
-* forge test --match-path test/liquity/PlayaroundGoerli.t.sol --fork-url http://127.0.0.1:3000/ -vvv
+* forge test --match-path test/palladium/PlayaroundGoerli.t.sol --fork-url http://127.0.0.1:3000/ -vvv
 */
 
 pragma solidity ^0.8.4;
