@@ -18,11 +18,12 @@ interface token{
     function decimals() external view returns (uint8);
 }
 
+
 contract ChangePrice is Script {
     // //testnet
     // address priceFeed=0xDC63FB38FDB04B7e2A9A01f1792a4e021538fc57;
     // //fork
-    address priceFeed=0x9DC46D3bb1f305A2326F390756D3fbE37fBc6421;
+    address priceFeed=0xF3A418bc8882aC406c9032D949D29a4e5a18fbBf;
     uint256 ownerPrivateKey;
     address user1;//owner of feed
     function setUp() public {

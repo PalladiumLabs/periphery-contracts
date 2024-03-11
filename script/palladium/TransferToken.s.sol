@@ -12,13 +12,11 @@ import "./interfaces/ITroveManager.sol";
 import "./interfaces/ICollSurplusPool.sol";
 import "./interfaces/IStabilityPool.sol";
 
-interface token{
-    function name() external view returns (string memory);
-    function symbol() external view returns (string memory);
-    function decimals() external view returns (uint8);
-}
 
-contract AdjustTrove is Script {
+contract TransferToken is Script {
+    uint256 transferAmount = 125e17 ;
+    address toUser=0x150CC4F90516C23e64231D2B92d737893DBb2515;
+
     uint256 userPrivateKey;
     address user;
 
@@ -43,35 +41,21 @@ contract AdjustTrove is Script {
     address pusd= 0xA505CFC9480b82320D57c863B69418D66D297803;
 
 
-    uint256 collIncrease = 1e18;  // borrower wants to add 1 ETH
-    uint256 pusdRepayment = 230e18; // borrower wants to repay 230 pusd
-    uint256 _1e20 = 100e18;
-    uint newDebt;uint newColl;uint ethusdprice;uint debt;uint coll;
+
     function setUp() public {
         string memory seedPhrase = vm.readFile(".secret");
-        uint256 _userPrivateKey = vm.deriveKey(seedPhrase, 0);
+        uint256 _userPrivateKey = vm.deriveKey(seedPhrase, 1);
         userPrivateKey=_userPrivateKey;
         user = vm.addr(userPrivateKey);
         console.log("user",user);
     }
     function run() public {
-        IBorrowerOperations BorrowerOperations = IBorrowerOperations(borrowerOperations);
-        IHintHelpers HintHelpers = IHintHelpers(hintHelpers);
-        ITroveManager TroveManager = ITroveManager(troveManager);
-        ISortedTroves SortedTroves = ISortedTroves(sortedTroves);
         vm.startBroadcast(userPrivateKey);
-        ( debt, coll,,) = TroveManager.getEntireDebtAndColl(user);
-        newDebt=debt+pusdRepayment;
-        newColl=coll+collIncrease;
-        uint NICR =( newColl*_1e20)/newDebt;
-        uint numTroves = SortedTroves.getSize();
-        uint numTrials = numTroves*15;
-        (address hintAddress,, )=HintHelpers.getApproxHint(NICR, numTrials, 42);
-        (address upperHint,address lowerHint ) = SortedTroves.findInsertPosition(NICR, hintAddress, hintAddress);
-        uint256 maxFee = 1e16; // Slippage protection: 5%
-        console.log("pusd balance before adjust ",IERC20(pusd).balanceOf(user));
-        BorrowerOperations.adjustTrove{ value: collIncrease }(maxFee, 0, pusdRepayment, true, upperHint, lowerHint);
-        console.log("pusd balance after adjust ",IERC20(pusd).balanceOf(user));
+        console.log("balance Before",IERC20(pusd).balanceOf(toUser));
+        IERC20(pusd).transfer(toUser,transferAmount);
+        console.log("balance After",IERC20(pusd).balanceOf(toUser));
+
+        
     }
     
 }

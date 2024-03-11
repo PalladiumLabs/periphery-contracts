@@ -18,9 +18,13 @@ interface token{
     function decimals() external view returns (uint8);
 }
 
-contract OpenTrove is Script {
-    uint256 userPrivateKey;
-    address user;
+contract TroveDetails is Script {
+    uint256 user1PrivateKey;
+    address user1;
+    uint256 user2PrivateKey;
+    address user2;
+    uint256 user3PrivateKey;
+    address user3;
 
     // address borrowerOperations =0x46ECf770a99d5d81056243deA22ecaB7271a43C7;
     // address troveManager = 0x84400014b6bFA5b76d2feb4F460AEac8dd84B656;
@@ -43,45 +47,41 @@ contract OpenTrove is Script {
     address pusd= 0xA505CFC9480b82320D57c863B69418D66D297803;
 
 
-    //temp
-    // uint256 pusdAmount = 15000e18 ;// borrower wants to withdraw 2500 pusd
-    // uint256 btcColl = 1e18; // borrower wants to lock 5 ETH collateral 0.06
-
-    uint256 pusdAmount = 2500e18 ;// borrower wants to withdraw 2500 pusd
-    uint256 btcColl = 5e18; // borrower wants to lock 5 ETH collateral 0.06
-    uint256 _1e20 = 100e18;
     function setUp() public {
         string memory seedPhrase = vm.readFile(".secret");
-        uint256 _userPrivateKey = vm.deriveKey(seedPhrase, 0);
-        userPrivateKey=_userPrivateKey;
-        user = vm.addr(userPrivateKey);
-        console.log("user",user);
+        uint256 _user1PrivateKey = vm.deriveKey(seedPhrase, 0);
+        user1PrivateKey=_user1PrivateKey;
+        user1 = vm.addr(user1PrivateKey);
+        // user1 = 0x9FDA00A2AEFbE11af8e767FF7f90a56DB502D12b;
+
+        uint256 _user2PrivateKey = vm.deriveKey(seedPhrase, 1);
+        user2PrivateKey=_user2PrivateKey;
+        user2 = vm.addr(user2PrivateKey);
+
+        uint256 _user3PrivateKey = vm.deriveKey(seedPhrase, 2);
+        user3PrivateKey=_user3PrivateKey;
+        user3 = vm.addr(user3PrivateKey);
     }
     function run() public {
+        address user=user1;
         IBorrowerOperations BorrowerOperations = IBorrowerOperations(borrowerOperations);
         IHintHelpers HintHelpers = IHintHelpers(hintHelpers);
         ITroveManager TroveManager = ITroveManager(troveManager);
+        IPriceFeed PriceFeed = IPriceFeed(priceFeed);
         ISortedTroves SortedTroves = ISortedTroves(sortedTroves);
-        vm.startBroadcast(userPrivateKey);
-        // Call deployed TroveManager contract to read the liquidation reserve and latest borrowing fee
-        uint256 liquidationReserve = TroveManager.LUSD_GAS_COMPENSATION();
-        uint256 expectedFee =  TroveManager.getBorrowingFeeWithDecay(pusdAmount);
-        // Total debt of the new trove = pusd amount drawn, plus fee, plus the liquidation reserve
-        uint256 totalDebt=pusdAmount+liquidationReserve+expectedFee;
-        console.log("total DEbt",totalDebt);
-        uint256 NICR =( btcColl*_1e20)/totalDebt;
-        console.log("NICR",NICR);
-        uint256 numTroves = SortedTroves.getSize();
-        uint256 numTrials = numTroves*15;
-        (address hintAddress,, )=HintHelpers.getApproxHint(NICR, numTrials, 42);
-        (address upperHint,address lowerHint ) = SortedTroves.findInsertPosition(NICR, hintAddress, hintAddress);
-        uint256 maxFee = 1e16; // Slippage protection: 5%
-        BorrowerOperations.openTrove{ value: btcColl }(maxFee, pusdAmount, upperHint, lowerHint);
-        console.log("pusd balance after ",IERC20(pusd).balanceOf(user));
-
-       
+        uint btcusdPrice=PriceFeed.fetchPrice();
+        console.log("btcusdPrice",btcusdPrice);
+        uint status=TroveManager.getTroveStatus(user);
+        console.log("status",status);
+        uint currentICR=TroveManager.getCurrentICR(user, btcusdPrice);
+        console.log("currentICR",currentICR/1e16);
+        uint protocolTCR=TroveManager.getTCR(btcusdPrice);
+        console.log("protocolTCR",protocolTCR/1e16);
+        ( uint256 debt,uint256 coll,,) = TroveManager.getEntireDebtAndColl(user);
+        console.log("debt",debt);
+        console.log("coll",coll);
+        uint MIN_NET_DEBT=BorrowerOperations.MIN_NET_DEBT();
+        console.log("MIN_NET_DEBT",MIN_NET_DEBT);
     }
-
-}
     
-
+}

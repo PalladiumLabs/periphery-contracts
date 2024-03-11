@@ -11,6 +11,7 @@ import "./interfaces/IPriceFeed.sol";
 import "./interfaces/ITroveManager.sol";
 import "./interfaces/ICollSurplusPool.sol";
 import "./interfaces/IStabilityPool.sol";
+import "./interfaces/ILQTYStaking.sol";
 
 interface token{
     function name() external view returns (string memory);
@@ -19,31 +20,29 @@ interface token{
 }
 
     
-contract ProvideToStability is Script {
+contract StakePDM is Script {
     uint256 userPrivateKey;
     address user;
-    // address pusd= 0x55FD5B67B115767036f9e8af569B281A8A544a12;
-    // address stabilityPool=0x25ADF247aC836D35be924f4b701A0787A30d46a9;
+    // address pdm= ;
+    // address pdmStaking=0x25ADF247aC836D35be924f4b701A0787A30d46a9;
     // //fork
-    address pusd= 0xA505CFC9480b82320D57c863B69418D66D297803;
-    address stabilityPool=0x3519030725d177362f4aC3066274E6bc73B3788A;
+    address pdm= 0xEbe79B0eF31aFB3c893e94FE8EbF11D5CB2231d5;
+    address pdmStaking=0xbfAe7bA13712783Bb14877930Cb9b7579C39F43E;
     function setUp() public {
         string memory seedPhrase = vm.readFile(".secret");
-        uint256 _userPrivateKey = vm.deriveKey(seedPhrase, 0);
+        uint256 _userPrivateKey = vm.deriveKey(seedPhrase, 2);
         userPrivateKey=_userPrivateKey;
         user = vm.addr(userPrivateKey);
         console.log("user",user);
     }
     function run() public {
-        IStabilityPool StabilityPool = IStabilityPool(stabilityPool);
+        ILQTYStaking PdmStaking = ILQTYStaking(pdmStaking);
         vm.startBroadcast(userPrivateKey);
-        /*Provide To Stability Pool*/
-        uint256 stablePoolDepAmount =500e18 ;  
-        console.log("pusd balance before Provide To Stability Pool ",IERC20(pusd).balanceOf(user));
-        StabilityPool.provideToSP(stablePoolDepAmount, address(0));
-        console.log("pusd balance after Provide To Stability Pool ",IERC20(pusd).balanceOf(user));
-        uint256 getCompoundedLUSDDeposit=StabilityPool.getCompoundedLUSDDeposit(user);
-        console.log("getCompoundedLUSDDeposit ",getCompoundedLUSDDeposit);
+        /*Provide To Staking Contract*/
+        uint256 pdmStakeAmount =500e18 ;  
+        PdmStaking.stake(pdmStakeAmount);
+        uint stakeAmount=PdmStaking.stakes(user);
+        console.log("stakeAmount",stakeAmount);
     }
     
 }

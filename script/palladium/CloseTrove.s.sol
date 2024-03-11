@@ -18,7 +18,7 @@ interface token{
     function decimals() external view returns (uint8);
 }
 
-contract OpenTrove is Script {
+contract CloseTrove is Script {
     uint256 userPrivateKey;
     address user;
 
@@ -42,14 +42,11 @@ contract OpenTrove is Script {
     address stabilityPool=0x3519030725d177362f4aC3066274E6bc73B3788A;
     address pusd= 0xA505CFC9480b82320D57c863B69418D66D297803;
 
+    uint debt;
+    uint coll;
+    uint256 liquidationReserve;
 
-    //temp
-    // uint256 pusdAmount = 15000e18 ;// borrower wants to withdraw 2500 pusd
-    // uint256 btcColl = 1e18; // borrower wants to lock 5 ETH collateral 0.06
 
-    uint256 pusdAmount = 2500e18 ;// borrower wants to withdraw 2500 pusd
-    uint256 btcColl = 5e18; // borrower wants to lock 5 ETH collateral 0.06
-    uint256 _1e20 = 100e18;
     function setUp() public {
         string memory seedPhrase = vm.readFile(".secret");
         uint256 _userPrivateKey = vm.deriveKey(seedPhrase, 0);
@@ -59,29 +56,14 @@ contract OpenTrove is Script {
     }
     function run() public {
         IBorrowerOperations BorrowerOperations = IBorrowerOperations(borrowerOperations);
-        IHintHelpers HintHelpers = IHintHelpers(hintHelpers);
         ITroveManager TroveManager = ITroveManager(troveManager);
-        ISortedTroves SortedTroves = ISortedTroves(sortedTroves);
+        liquidationReserve = TroveManager.LUSD_GAS_COMPENSATION();
+        ( debt, coll,,) = TroveManager.getEntireDebtAndColl(user);
+        uint debtToPay=debt-liquidationReserve;
+        require(IERC20(pusd).balanceOf(user)>=debtToPay,"not enough balance");
+        console.log(IERC20(pusd).balanceOf(user));
         vm.startBroadcast(userPrivateKey);
-        // Call deployed TroveManager contract to read the liquidation reserve and latest borrowing fee
-        uint256 liquidationReserve = TroveManager.LUSD_GAS_COMPENSATION();
-        uint256 expectedFee =  TroveManager.getBorrowingFeeWithDecay(pusdAmount);
-        // Total debt of the new trove = pusd amount drawn, plus fee, plus the liquidation reserve
-        uint256 totalDebt=pusdAmount+liquidationReserve+expectedFee;
-        console.log("total DEbt",totalDebt);
-        uint256 NICR =( btcColl*_1e20)/totalDebt;
-        console.log("NICR",NICR);
-        uint256 numTroves = SortedTroves.getSize();
-        uint256 numTrials = numTroves*15;
-        (address hintAddress,, )=HintHelpers.getApproxHint(NICR, numTrials, 42);
-        (address upperHint,address lowerHint ) = SortedTroves.findInsertPosition(NICR, hintAddress, hintAddress);
-        uint256 maxFee = 1e16; // Slippage protection: 5%
-        BorrowerOperations.openTrove{ value: btcColl }(maxFee, pusdAmount, upperHint, lowerHint);
-        console.log("pusd balance after ",IERC20(pusd).balanceOf(user));
-
-       
+        BorrowerOperations.closeTrove();
+        console.log(IERC20(pusd).balanceOf(user));
     }
-
 }
-    
-

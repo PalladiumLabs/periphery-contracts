@@ -33,15 +33,14 @@ contract RedeemCollateral is Script {
 
     // //fork
 
-    address borrowerOperations =0x3C3292B2370fD06eD99b28ABdA1FB4fFBB985a2b;
-    address troveManager = 0x01E2460982658069A2Ce288d65d981432762B216;
-    address hintHelpers=0x793771C01509fa19aBA55a2bd4D18a167E4D96F9;
-    address sortedTroves=0x7348CE8dd1510E7D96A2D044Dc47d86385A6f1d6;
-    address priceFeed=0x9DC46D3bb1f305A2326F390756D3fbE37fBc6421;
-    address collSurplusPool=0x28422bDab84A2623e2b4B8C74C0064540D45a6B7;
-    address stabilityPool=0x6C7ca3D5d0CE8C7ecc3a6d52e9d266e25Fa6f424;
-    address pusd= 0xF3A418bc8882aC406c9032D949D29a4e5a18fbBf;
-
+    address borrowerOperations =0x793771C01509fa19aBA55a2bd4D18a167E4D96F9;
+    address troveManager = 0x4A313d60Ed48E792c6DD1cef1d5Db1C258562C48;
+    address hintHelpers=0x6C7ca3D5d0CE8C7ecc3a6d52e9d266e25Fa6f424;
+    address sortedTroves=0x26bE66407AD51a5220a91FB7bEc6bE70E75b8a19;
+    address priceFeed=0xF3A418bc8882aC406c9032D949D29a4e5a18fbBf;
+    address collSurplusPool=0x1F140eE1f078a982c1f0e9c22C65365cd9452A62;
+    address stabilityPool=0x3519030725d177362f4aC3066274E6bc73B3788A;
+    address pusd= 0xA505CFC9480b82320D57c863B69418D66D297803;
 
 
     uint256 redeemAmount = 400e18 ;// user wants to redeem 400 pusd
