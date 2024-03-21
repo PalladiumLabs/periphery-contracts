@@ -396,21 +396,73 @@ contract PlayaroundBotanix is Test {
         uint collAmount=5e18;
         uint stablePoolDepAmount=1000e18;
         openTrove(user1, pusdAmount, collAmount);
-        console.log("pusd balance before Provide To Stability Pool ",IERC20(pusd).balanceOf(user1));
         vm.startPrank(user1);
         StabilityPool.provideToSP(stablePoolDepAmount, address(0));
-        console.log("pusd balance after Provide To Stability Pool ",IERC20(pusd).balanceOf(user1));
         uint256 getCompoundedLUSDDeposit=StabilityPool.getCompoundedLUSDDeposit(user1);
-        console.log("getCompoundedLUSDDeposit ",getCompoundedLUSDDeposit);
         vm.stopPrank();
     }
 
+    function test_ProvideToStabilityPoolAndLiquidate() public {
+        uint stablePoolDepAmount=1000e18;
+        ethusdprice=PriceFeed.fetchPrice();
+        openTrove(user1, 40000e18, 1e18);
+        openTrove(user2, pusdAmount, 5e18);
+        openTrove(user3, pusdAmount, 5e18);
+        vm.startPrank(user3);
+        StabilityPool.provideToSP(stablePoolDepAmount, address(0));
+        uint256 getCompoundedLUSDDeposit=StabilityPool.getCompoundedLUSDDeposit(user3)/1e18;
+        vm.stopPrank();
+        uint ICRuser=TroveManager.getCurrentICR(user1, ethusdprice);
+        console.log("getCompoundedLUSDDeposit beforee",getCompoundedLUSDDeposit);
+        console.log("ICRuser before",ICRuser/1e16);
+        vm.prank(owner);
+        PriceFeed.setPrice(44000e18);
+        ethusdprice=PriceFeed.fetchPrice();
+        ICRuser=TroveManager.getCurrentICR(user1, ethusdprice);
+        console.log("ICRuser after nprice change",ICRuser/1e16);
+        vm.startPrank(user4);
+        TroveManager.liquidate(user1);
+        getCompoundedLUSDDeposit=StabilityPool.getCompoundedLUSDDeposit(user3)/1e18;
+        uint256 getEthGain=StabilityPool.getDepositorETHGain(user3);
+        uint256 getLQTYGain=StabilityPool.getDepositorLQTYGain(user3);
+        console.log("getEthGain after liquidate",getEthGain);
+        console.log("getLQTYGain after liquidate",getLQTYGain);
+        console.log("getCompoundedLUSDDeposit after liquidate",getCompoundedLUSDDeposit);
+        console.log("btcbalance before withdraw",user3.balance);
+        vm.startPrank(user3);
+        StabilityPool.withdrawFromSP(0);
+        console.log("btcbalance after withdraw",user3.balance);
+    }
+
+    function test_RemoveFromStabilityPool() public {
+        uint collAmount=5e18;
+        uint stablePoolDepAmount=1000e18;
+        openTrove(user1, pusdAmount, collAmount);
+        console.log("pusd balance before Provide To Stability Pool ",IERC20(pusd).balanceOf(user1));
+        vm.startPrank(user1);
+        StabilityPool.provideToSP(stablePoolDepAmount, address(0));
+        uint256 getCompoundedLUSDDeposit=StabilityPool.getCompoundedLUSDDeposit(user1);
+        console.log("pusd balance after Provide To Stability Pool ",IERC20(pusd).balanceOf(user1));
+        console.log("getCompoundedLUSDDeposit",getCompoundedLUSDDeposit);
+        StabilityPool.withdrawFromSP(stablePoolDepAmount/4);
+        getCompoundedLUSDDeposit=StabilityPool.getCompoundedLUSDDeposit(user1);
+        console.log("getCompoundedLUSDDeposit",getCompoundedLUSDDeposit);
+        StabilityPool.withdrawFromSP(getCompoundedLUSDDeposit);
+        getCompoundedLUSDDeposit=StabilityPool.getCompoundedLUSDDeposit(user1);
+        console.log("getCompoundedLUSDDeposit",getCompoundedLUSDDeposit);
+        vm.stopPrank();
+    }
+
+
     function test_LiquidateTrove() public {
-        openTrove(user1, pusdAmount, collateralAmount);
+        openTrove(user1, 30000e18, 1e18);
         openTrove(user2, pusdAmount, collateralAmount);
         openTrove(user3, pusdAmount, collateralAmount);
+        (uint debt,uint coll, , )=TroveManager.getEntireDebtAndColl(user1);
+        uint liquidationPriceForUer1=calculateLiquidationPrice(110, debt, coll);
+        console.log("liquidationPriceForUer1",liquidationPriceForUer1/1e18);
         vm.prank(owner);
-        PriceFeed.setPrice(200000000000000000000);
+        PriceFeed.setPrice(liquidationPriceForUer1-1e18);
         vm.startPrank(user4);
         TroveManager.liquidate(user1);
         ( debt, coll,,) = TroveManager.getEntireDebtAndColl(user1);
@@ -433,26 +485,120 @@ contract PlayaroundBotanix is Test {
     }
 
     function test_CalculateRatio( ) public {
-        ethusdprice=PriceFeed.fetchPrice();
-        console.log("ethusdprice",ethusdprice);
+        uint btcPrice=PriceFeed.fetchPrice();
+        uint collAmount= 1e18;
+        uint borrowAmount=40000e18;
+        openTrove(user1, borrowAmount, collAmount);
+        (uint debt,uint coll, , )=TroveManager.getEntireDebtAndColl(user1);
+        uint troveRatioFromProtocol=TroveManager.getCurrentICR(user1, btcPrice);
+        uint troveRatioFromFunction=calculateCollateralRatio(debt, coll, btcPrice);
+        console.log("troveRatio from protocol",troveRatioFromProtocol/1e16);
+        console.log("troveRatio from fucntion",troveRatioFromFunction/1e18);
+    }
+
+    function test_MaxBorrowOpenTroveInNormalMode() public {
+        uint MCR=TroveManager.MCR()/1e16;
+        openTrove(user2, pusdAmount, 5e18);
+        openTrove(user3, pusdAmount, 5e18);
+        openTrove(user4, pusdAmount, 5e18);
+        uint btcPrice=PriceFeed.fetchPrice();
         uint collAmount=1e18;
-        uint borrowAmount=30000e18;
-        uint ratio=(collAmount*ethusdprice*100)/borrowAmount;
-        console.log("ratio",ratio/1e18);
-        uint256 liquidationReserve = TroveManager.LUSD_GAS_COMPENSATION();
-        uint256 expectedFee =  TroveManager.getBorrowingFeeWithDecay(borrowAmount);
-        uint256 totalDebt=borrowAmount+liquidationReserve+expectedFee;
-        uint256 NICR =( collAmount*_1e20)/totalDebt;
-        uint lastRatio=(collAmount*ethusdprice*100)/(totalDebt);
-        console.log("lastRatio",lastRatio/1e18);
-        uint256 numTroves = SortedTroves.getSize();
-        uint256 numTrials = numTroves*15;
+        uint maxBorrowAmount=calculateMaxBorrowAmountOpenTrove(MCR/*110*/, collAmount, btcPrice);
+        console.log("maxBorrowAmount",maxBorrowAmount);
+        openTrove(user1, maxBorrowAmount, collAmount);
+        uint getTroveTCR=TroveManager.getCurrentICR(user1, btcPrice);
+        console.log("getTroveTCR",getTroveTCR);
+    }
+
+    function test_MaxBorrowOpenTroveInRecoveryMode() public {
+        uint CCR=TroveManager.CCR()/1e16;
+        openTrove(user2, 40000e18, 5e18);
+        openTrove(user3, 40000e18, 5e18);
+        openTrove(user4, 40000e18, 5e18);
+        uint btcPrice=PriceFeed.fetchPrice();
+        uint collAmount=1e18;
+        uint getEntireSystemDebt=TroveManager.getEntireSystemDebt();
+        uint getEntireSystemColl=TroveManager.getEntireSystemColl();
+        uint recModePrice=calculateLiquidationPrice(CCR, getEntireSystemDebt, getEntireSystemColl);
+        console.log("recModePrice",recModePrice/1e18);
+        uint TCR=TroveManager.getTCR(recModePrice-1e18);
+        btcPrice=PriceFeed.fetchPrice();
+        vm.prank(owner);
+        PriceFeed.setPrice(recModePrice-1e18);//this will put protocol in recovery mode
+        btcPrice=PriceFeed.fetchPrice();
+        uint maxBorrowAmount=calculateMaxBorrowAmountOpenTrove(CCR/*150*/, collAmount, btcPrice);
+        console.log("maxBorrowAmount",maxBorrowAmount);
+        openTrove(user1, maxBorrowAmount, collAmount);
+        uint getTroveTCR=TroveManager.getCurrentICR(user1, btcPrice);
+        console.log("getTroveTCR",getTroveTCR);//there is slight error up here ≈0.5%
+    }
+
+    function test_MaxBorrowIncreaseOnlyDebt( ) public {
+        openTrove(user2, 35000e18,1e18);
+        openTrove(user3, 35000e18,1e18);
+        //^dummy openig^
+        uint debtIncrease;
+        uint maxDebtIncrease;
+        openTrove(user1, 2500e18,1e18);
+        ( debt, coll,,) = TroveManager.getEntireDebtAndColl(user1);
+        console.log("debt before",debt);
+        console.log("coll before",coll);
+        maxDebtIncrease=calculateMaxBorrowAmountIcreaseDebt(110, coll, debt, PriceFeed.fetchPrice());
+        console.log("maxDebtIncrease",maxDebtIncrease);
+        debtIncrease=maxDebtIncrease;
+        console.log("ratio",calculateCollateralRatio(debt+maxDebtIncrease,coll,PriceFeed.fetchPrice()));
+        uint newDebt=debt+debtIncrease;
+        uint newColl=coll+0;
+        uint NICR =( newColl*_1e20)/newDebt;
+        uint numTroves = SortedTroves.getSize();
+        uint numTrials = numTroves*15;
+        uint maxFee = 5e16; // Slippage protection: 5%
+        //hint helper not working on forked env , so directly assigning hint address in below  findInsertPosition  function .
         (address hintAddress,, )=HintHelpers.getApproxHint(NICR, numTrials, 42);
-        ( upperHint,  lowerHint ) = SortedTroves.findInsertPosition(NICR, hintAddress, hintAddress);
-        uint256 maxFee = 5e16; // Slippage protection: 5%
+        (address upperHint,address  lowerHint ) = SortedTroves.findInsertPosition(NICR, hintAddress, hintAddress);
+        console.log("pusd balance before adjust ",IERC20(pusd).balanceOf(user1));
         vm.startPrank(user1);
-        BorrowerOperations.openTrove{ value: collAmount }(maxFee, borrowAmount, upperHint, lowerHint);
-        vm.stopPrank();
+        BorrowerOperations.adjustTrove{ value: 0 }(maxFee, 0, debtIncrease, true, upperHint, lowerHint);
+        ( debt, coll,,) = TroveManager.getEntireDebtAndColl(user1);
+        console.log("debt after",debt);
+        console.log("coll after",coll);
+        console.log("pusd balance after adjust ",IERC20(pusd).balanceOf(user1));
+        uint getTroveTCR=TroveManager.getCurrentICR(user1, PriceFeed.fetchPrice());
+        console.log("getTroveTCR",getTroveTCR/1e16);//there is slight error up here ≈0.5%
+    }
+
+    function test_MaxBorrowIncreaseBothDebtAndCollateral( ) public {
+        openTrove(user2, 40000e18, 5e18);
+        openTrove(user3, 40000e18, 5e18);
+        openTrove(user4, 40000e18, 5e18);
+        uint pusdAmount=2500e18;
+        uint collAmount =1e18;
+        uint debtIncrease=500e18;
+        uint collIncrease=2e18;
+        openTrove(user1, pusdAmount,collAmount);
+        ( debt, coll,,) = TroveManager.getEntireDebtAndColl(user1);
+        console.log("debt before",debt);
+        console.log("coll before",coll);
+        debtIncrease=calculateMaxBorrowAmountIcreaseDebt(110, coll+collIncrease, debt, PriceFeed.fetchPrice());
+        console.log("debtIncrease",debtIncrease);
+        uint newDebt=debt+debtIncrease;
+        uint newColl=coll+collIncrease;
+        uint NICR =( newColl*_1e20)/newDebt;
+        uint numTroves = SortedTroves.getSize();
+        uint numTrials = numTroves*15;
+        uint maxFee = 5e16; // Slippage protection: 5%
+        //hint helper not working on forked env , so directly assigning hint address in below  findInsertPosition  function .
+        (address hintAddress,, )=HintHelpers.getApproxHint(NICR, numTrials, 42);
+        (address upperHint,address  lowerHint ) = SortedTroves.findInsertPosition(NICR, hintAddress, hintAddress);
+        console.log("pusd balance before adjust ",IERC20(pusd).balanceOf(user1));
+        vm.startPrank(user1);
+        BorrowerOperations.adjustTrove{ value: collIncrease }(maxFee, 0, debtIncrease, true, upperHint, lowerHint);
+        ( debt, coll,,) = TroveManager.getEntireDebtAndColl(user1);
+        console.log("debt after",debt);
+        console.log("coll after",coll);
+        console.log("pusd balance after adjust ",IERC20(pusd).balanceOf(user1));
+        uint getTroveTCR=TroveManager.getCurrentICR(user1, PriceFeed.fetchPrice());
+        console.log("getTroveTCR",getTroveTCR/1e16);//there is slight error up here ≈0.5%
     }
 
 
@@ -478,6 +624,32 @@ contract PlayaroundBotanix is Test {
         vm.stopPrank();
     }
 
-    
+    function calculateCollateralRatio(uint debtAmount/*(18dec input)*/,uint collAmount/*(18dec input)*/,uint btcPrice/*(18dec input)*/) public returns(uint){
+        uint CollateralRatio=(collAmount*btcPrice*100)/(debtAmount);
+        return CollateralRatio;//in 18 decimal while protocl returns in 16 decimal dont get confused
+    }
 
+    function calculateMaxBorrowAmountOpenTrove(uint collRatio/*110 innormal & 150 in recovery(normal input)*/,uint collAmount/*(18dec input)*/,uint btcPrice/*(18dec input)*/) public returns (uint) {
+        uint borrowingRateWithDecay=TroveManager.getBorrowingRateWithDecay();
+        // uint deimalPrecision=TroveManager.DECIMAL_PRECISION();
+        // uint Rate=borrowingRateWithDecay/deimalPrecision;
+        // console.log("rAte",Rate);
+        uint BorrowAmountNoReserveAndFee=(collAmount*btcPrice*100)/(collRatio*1e18);
+        uint256 liquidationReserve = TroveManager.LUSD_GAS_COMPENSATION();
+        uint maxBorrowAmount=((BorrowAmountNoReserveAndFee-liquidationReserve)*1e18)/(borrowingRateWithDecay+1e18);
+        return maxBorrowAmount;//in 18 decimal
+    }
+
+    function calculateMaxBorrowAmountIcreaseDebt(uint collRatio/*110 innormal & 150 in recovery(normal input)*/,uint collAmount/*(18dec input)*/,uint currentBebt,uint btcPrice/*(18dec input)*/) public returns (uint) {
+        uint borrowingRateWithDecay=TroveManager.getBorrowingRateWithDecay();
+        uint BorrowAmountNoReserveAndFee=(collAmount*btcPrice*100)/(collRatio*1e18);
+        // uint256 liquidationReserve = TroveManager.LUSD_GAS_COMPENSATION();
+        uint maxBorrowAmount=(BorrowAmountNoReserveAndFee*1e18)/(borrowingRateWithDecay+1e18);
+        return maxBorrowAmount-currentBebt;//in 18 decimal
+    }
+
+    function calculateLiquidationPrice(uint liquidationThreshhold/*(normal input)*/,uint debtAmount/*(18dec input)*/,uint collAmount/*(18dec input)*/) public returns(uint) {
+        uint liquidationPrice=(liquidationThreshhold*debtAmount*1e18)/(collAmount*100);
+        return liquidationPrice;//in 18 decimal
+    }
 }

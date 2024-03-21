@@ -19,10 +19,9 @@ interface token{
 }
 
     
-contract ProvideToStability is Script {
+contract RemoveFromStability is Script {
     uint256 userPrivateKey;
     address user;
-    // address userTemp=0x9FDA00A2AEFbE11af8e767FF7f90a56DB502D12b;
     // address pusd= 0x55FD5B67B115767036f9e8af569B281A8A544a12;
     // address stabilityPool=0x25ADF247aC836D35be924f4b701A0787A30d46a9;
     // //fork
@@ -39,12 +38,14 @@ contract ProvideToStability is Script {
         IStabilityPool StabilityPool = IStabilityPool(stabilityPool);
         vm.startBroadcast(userPrivateKey);
         /*Provide To Stability Pool*/
-        uint256 stablePoolDepAmount =500e18 ;  
-        console.log("pusd balance before Provide To Stability Pool ",IERC20(pusd).balanceOf(user));
-        StabilityPool.provideToSP(stablePoolDepAmount, address(0));
-        console.log("pusd balance after Provide To Stability Pool ",IERC20(pusd).balanceOf(user));
+        uint256 withdrawAmount =200e18 ;  
         uint256 getCompoundedLUSDDeposit=StabilityPool.getCompoundedLUSDDeposit(user);
         console.log("getCompoundedLUSDDeposit ",getCompoundedLUSDDeposit);
-        
+        console.log("pusd balance before Provide To Stability Pool ",IERC20(pusd).balanceOf(user));
+        StabilityPool.withdrawFromSP(withdrawAmount);
+        console.log("pusd balance after Provide To Stability Pool ",IERC20(pusd).balanceOf(user));
+        getCompoundedLUSDDeposit=StabilityPool.getCompoundedLUSDDeposit(user);
+        console.log("getCompoundedLUSDDeposit ",getCompoundedLUSDDeposit);
     }
+    
 }
