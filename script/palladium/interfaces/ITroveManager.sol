@@ -145,4 +145,13 @@ interface ITroveManager  {
     function getTCR(uint _price) external view returns (uint);
 
     function checkRecoveryMode(uint _price) external view returns (bool);
+
+    function getEntireSystemColl() external view returns (uint );
+    function getEntireSystemDebt() external view returns (uint );
+    function CCR() external view returns (uint);
+    function MCR() external view returns (uint);
+    function DECIMAL_PRECISION() external view returns (uint);
+
+
 }
+

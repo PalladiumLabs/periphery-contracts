@@ -9,6 +9,7 @@ interface IPriceFeed {
    
     // --- Function ---
     function fetchPrice() external returns (uint);
+    function priceRouter() external returns (address);
     function setPrice(uint256 price) external returns (bool);
     function transferOwnership(address newOwner) external;
 }

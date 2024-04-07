@@ -19,6 +19,8 @@ import "./interfaces/IPriceFeed.sol";
 import "./interfaces/ITroveManager.sol";
 import "./interfaces/ICollSurplusPool.sol";
 import "./interfaces/IStabilityPool.sol";
+import "../../src/PriceRouter.sol";
+import "../../src/PriceOracle.sol";
 
 interface token{
     function name() external view returns (string memory);
@@ -48,6 +50,11 @@ contract PlayaroundBotanix is Test {
     address user6;
     address owner=0x150CC4F90516C23e64231D2B92d737893DBb2515;
 
+    address _priceOracle=0x9080325bA305953c0Dae207da8d424991DDf8186;
+    address _priceRouter=0x77b713201dDA5805De0F19f4B8a127Cc55f6dac6;
+    PriceRouter priceRouter;
+    PriceOracle priceOracle;
+
     // address borrowerOperations =0x46ECf770a99d5d81056243deA22ecaB7271a43C7;
     // address troveManager = 0x84400014b6bFA5b76d2feb4F460AEac8dd84B656;
     // address hintHelpers=0xA7B88e482d3C9d17A1b83bc3FbeB4DF72cB20478;
@@ -59,15 +66,15 @@ contract PlayaroundBotanix is Test {
 
 
     //fork botanix
-    address borrowerOperations =0x793771C01509fa19aBA55a2bd4D18a167E4D96F9;
-    address troveManager = 0x4A313d60Ed48E792c6DD1cef1d5Db1C258562C48;
-    address hintHelpers=0x6C7ca3D5d0CE8C7ecc3a6d52e9d266e25Fa6f424;
-    address sortedTroves=0x26bE66407AD51a5220a91FB7bEc6bE70E75b8a19;
-    address priceFeed=0xF3A418bc8882aC406c9032D949D29a4e5a18fbBf;
-    address collSurplusPool=0x1F140eE1f078a982c1f0e9c22C65365cd9452A62;
-    address stabilityPool=0x3519030725d177362f4aC3066274E6bc73B3788A;
-    address pusd= 0xA505CFC9480b82320D57c863B69418D66D297803;
-    address pdm=0xEbe79B0eF31aFB3c893e94FE8EbF11D5CB2231d5;
+    address borrowerOperations =0x4D31Cc6324A2010595C8a3bD60e88Eb2ADFDb83e;
+    address troveManager = 0x8e6B12783356d2321bF09386F088E0194B03f5dB;
+    address hintHelpers=0xD7110E8E953d2bA408cEe5611413a17a2C6D8D68;
+    address sortedTroves=0xc0551fAA6A12BbA561fC2cF439902AC8Cb9BF4E2;
+    address priceFeed=0x89acFD0Ec0572D05f6Cb46469b197Ae0e0333e2D;
+    address collSurplusPool=0x7E3954d1b556Abe3D670B6896267434b4f7eC090;
+    address stabilityPool=0x0Bd4073E4c3b260812829C860552778896A77101;
+    address pusd= 0x90200a19dF430a91eB34ACc219e6E81498Eae00D;
+    address pdm=0xCE36C4e1703106e9cAB6258A6dcB6FeB52D25E87;
 
 
 
@@ -110,19 +117,19 @@ contract PlayaroundBotanix is Test {
     function setUp() public {
         string memory seedPhrase = vm.readFile(".secret");
 
-        uint256 _user1PrivateKey = vm.deriveKey(seedPhrase, 0);
+        uint256 _user1PrivateKey = vm.deriveKey(seedPhrase, 2);
         user1PrivateKey=_user1PrivateKey;
         user1 = vm.addr(user1PrivateKey);
 
-        uint256 _user2PrivateKey = vm.deriveKey(seedPhrase, 1);
+        uint256 _user2PrivateKey = vm.deriveKey(seedPhrase, 3);
         user2PrivateKey=_user2PrivateKey;
         user2 = vm.addr(user2PrivateKey);
 
-        uint256 _user3PrivateKey = vm.deriveKey(seedPhrase, 2);
+        uint256 _user3PrivateKey = vm.deriveKey(seedPhrase, 4);
         user3PrivateKey=_user3PrivateKey;
         user3 = vm.addr(user3PrivateKey);
 
-        uint256 _user4PrivateKey = vm.deriveKey(seedPhrase, 3);
+        uint256 _user4PrivateKey = vm.deriveKey(seedPhrase, 5);
         user4PrivateKey=_user4PrivateKey;
         user4 = vm.addr(user4PrivateKey);
 
@@ -140,6 +147,8 @@ contract PlayaroundBotanix is Test {
         PriceFeed = IPriceFeed(priceFeed);
         CollSurplusPool = ICollSurplusPool(collSurplusPool);
         StabilityPool = IStabilityPool(stabilityPool);
+        priceOracle=PriceOracle(_priceOracle);
+        priceRouter=PriceRouter(_priceRouter);
         MIN_NET_DEBT=BorrowerOperations.MIN_NET_DEBT();
 
     }
@@ -323,8 +332,9 @@ contract PlayaroundBotanix is Test {
 
     function test_Close() public {
         ethusdprice=PriceFeed.fetchPrice();
-        vm.prank(owner);
+        // vm.prank(owner);
         // PriceFeed.setPrice(45000e18);
+        updatePrice(45000e18);
         ethusdprice=PriceFeed.fetchPrice();
         /*Opening the Trove*/
         console.log("==================================== ");
@@ -405,7 +415,7 @@ contract PlayaroundBotanix is Test {
     function test_ProvideToStabilityPoolAndLiquidate() public {
         uint stablePoolDepAmount=1000e18;
         ethusdprice=PriceFeed.fetchPrice();
-        openTrove(user1, 40000e18, 1e18);
+        openTrove(user1, 2500e18, 1e18);
         openTrove(user2, pusdAmount, 5e18);
         openTrove(user3, pusdAmount, 5e18);
         vm.startPrank(user3);
@@ -415,8 +425,11 @@ contract PlayaroundBotanix is Test {
         uint ICRuser=TroveManager.getCurrentICR(user1, ethusdprice);
         console.log("getCompoundedLUSDDeposit beforee",getCompoundedLUSDDeposit);
         console.log("ICRuser before",ICRuser/1e16);
-        vm.prank(owner);
-        PriceFeed.setPrice(44000e18);
+        ( debt, coll, , )=TroveManager.getEntireDebtAndColl(user1);
+        uint liquidationPriceForUer1=calculateLiquidationPrice(110, debt, coll);
+        // vm.prank(owner);
+        // PriceFeed.setPrice(liquidationPriceForUer1-1e18);
+        updatePrice(liquidationPriceForUer1-1e18);
         ethusdprice=PriceFeed.fetchPrice();
         ICRuser=TroveManager.getCurrentICR(user1, ethusdprice);
         console.log("ICRuser after nprice change",ICRuser/1e16);
@@ -461,8 +474,9 @@ contract PlayaroundBotanix is Test {
         (uint debt,uint coll, , )=TroveManager.getEntireDebtAndColl(user1);
         uint liquidationPriceForUer1=calculateLiquidationPrice(110, debt, coll);
         console.log("liquidationPriceForUer1",liquidationPriceForUer1/1e18);
-        vm.prank(owner);
-        PriceFeed.setPrice(liquidationPriceForUer1-1e18);
+        // vm.prank(owner);
+        // PriceFeed.setPrice(liquidationPriceForUer1-1e18);
+        updatePrice(liquidationPriceForUer1-1e18);
         vm.startPrank(user4);
         TroveManager.liquidate(user1);
         ( debt, coll,,) = TroveManager.getEntireDebtAndColl(user1);
@@ -472,8 +486,9 @@ contract PlayaroundBotanix is Test {
 
 
     function test_BountyAddressLock() public {
-        vm.prank(owner);
-        PriceFeed.setPrice(60000e18);
+        // vm.prank(owner);
+        // PriceFeed.setPrice(60000e18);
+        updatePrice(60000e18);
         ethusdprice=PriceFeed.fetchPrice();
         console.log("ethusdprice",ethusdprice);
         console.log("pdm balanceof bounty user",IERC20(pdm).balanceOf(user4));
@@ -487,7 +502,7 @@ contract PlayaroundBotanix is Test {
     function test_CalculateRatio( ) public {
         uint btcPrice=PriceFeed.fetchPrice();
         uint collAmount= 1e18;
-        uint borrowAmount=40000e18;
+        uint borrowAmount=20000e18;
         openTrove(user1, borrowAmount, collAmount);
         (uint debt,uint coll, , )=TroveManager.getEntireDebtAndColl(user1);
         uint troveRatioFromProtocol=TroveManager.getCurrentICR(user1, btcPrice);
@@ -523,8 +538,9 @@ contract PlayaroundBotanix is Test {
         console.log("recModePrice",recModePrice/1e18);
         uint TCR=TroveManager.getTCR(recModePrice-1e18);
         btcPrice=PriceFeed.fetchPrice();
-        vm.prank(owner);
-        PriceFeed.setPrice(recModePrice-1e18);//this will put protocol in recovery mode
+        // vm.prank(owner);
+        // PriceFeed.setPrice(recModePrice-1e18);//this will put protocol in recovery mode
+        updatePrice(recModePrice-1e18);
         btcPrice=PriceFeed.fetchPrice();
         uint maxBorrowAmount=calculateMaxBorrowAmountOpenTrove(CCR/*150*/, collAmount, btcPrice);
         console.log("maxBorrowAmount",maxBorrowAmount);
@@ -534,8 +550,8 @@ contract PlayaroundBotanix is Test {
     }
 
     function test_MaxBorrowIncreaseOnlyDebt( ) public {
-        openTrove(user2, 35000e18,1e18);
-        openTrove(user3, 35000e18,1e18);
+        openTrove(user2, 35000e18,2e18);
+        openTrove(user3, 35000e18,2e18);
         //^dummy openig^
         uint debtIncrease;
         uint maxDebtIncrease;
@@ -601,6 +617,34 @@ contract PlayaroundBotanix is Test {
         console.log("getTroveTCR",getTroveTCR/1e16);//there is slight error up here ≈0.5%
     }
 
+    function test_CCR() public {
+        openTrove(user2, 40000e18, 2e18);
+        openTrove(user3, 40000e18, 3e18);
+        openTrove(user4, 40000e18, 4e18);
+        uint CCR=TroveManager.CCR()/1e16;
+        uint MCR=TroveManager.MCR()/1e16;
+        uint btcPrice=PriceFeed.fetchPrice();
+        bool mode =TroveManager.checkRecoveryMode(btcPrice);
+        assertEq(mode, false);
+        uint getTotalTCR=TroveManager.getTCR(btcPrice)/1e16;
+        uint getEntireSystemDebt=TroveManager.getEntireSystemDebt();
+        uint getEntireSystemColl=TroveManager.getEntireSystemColl();
+        uint recModePrice=calculateLiquidationPrice(CCR, getEntireSystemDebt, getEntireSystemColl);
+        updatePrice(recModePrice-1e18);
+        btcPrice=PriceFeed.fetchPrice();
+        mode =TroveManager.checkRecoveryMode(btcPrice);
+        assertEq(mode, true);
+    }
+
+    function test_PriceFeedTest() public {
+        uint btcPrice=PriceFeed.fetchPrice();
+        console.log("btcPrice",btcPrice/1e18);
+
+        address router=PriceFeed.priceRouter();
+        assertEq(router, address(priceRouter));
+
+    }
+
 
     function openTrove(address user,uint amount,uint collAmount) public {
         // Call deployed TroveManager contract to read the liquidation reserve and latest borrowing fee
@@ -652,4 +696,12 @@ contract PlayaroundBotanix is Test {
         uint liquidationPrice=(liquidationThreshhold*debtAmount*1e18)/(collAmount*100);
         return liquidationPrice;//in 18 decimal
     }
+
+    function updatePrice(uint price) public  {
+        vm.prank(owner);
+        priceOracle.setPrice(price);
+    }
+
+    
+
 }
