@@ -26,8 +26,8 @@ contract ProvideToStability is Script {
     // address pusd= 0x55FD5B67B115767036f9e8af569B281A8A544a12;
     // address stabilityPool=0x25ADF247aC836D35be924f4b701A0787A30d46a9;
     // //fork
-    address pusd= 0xA505CFC9480b82320D57c863B69418D66D297803;
-    address stabilityPool=0x3519030725d177362f4aC3066274E6bc73B3788A;
+    address pusd= 0xB7d7027B5dD0c50946dE98c26e5969b37D588c32;
+    address stabilityPool=0xb5d2f71f2B1506Ec243D0B232EB15492d685B689;
     function setUp() public {
         string memory seedPhrase = vm.readFile(".secret");
         uint256 _userPrivateKey = vm.deriveKey(seedPhrase, 0);
@@ -41,7 +41,7 @@ contract ProvideToStability is Script {
         /*Provide To Stability Pool*/
         uint256 stablePoolDepAmount =500e18 ;  
         console.log("pusd balance before Provide To Stability Pool ",IERC20(pusd).balanceOf(user));
-        StabilityPool.provideToSP(stablePoolDepAmount, address(0));
+        StabilityPool.provideToSP(IERC20(pusd).balanceOf(user)/10, address(0));
         console.log("pusd balance after Provide To Stability Pool ",IERC20(pusd).balanceOf(user));
         uint256 getCompoundedLUSDDeposit=StabilityPool.getCompoundedLUSDDeposit(user);
         console.log("getCompoundedLUSDDeposit ",getCompoundedLUSDDeposit);

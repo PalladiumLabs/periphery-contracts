@@ -15,13 +15,15 @@ interface IPair{
 contract UpdatePrice is Script {
     uint256 userPrivateKey;
     address user;
-    address priceOracle=0x9080325bA305953c0Dae207da8d424991DDf8186;
+    address priceOracle=0x5BCC7cf55D3ce55cF97E05776F8155b595D40a78;
     uint updatedPRice=70000e18;
-    address priceRouter=0x77b713201dDA5805De0F19f4B8a127Cc55f6dac6;
+    address priceRouter=0x48e8b294f36e68C9F7f2380A7d67CbD80E792eaB;
+    address ownerOracle=0x961Ef0b358048D6E34BDD1acE00D72b37B9123D7;
+
   
     function setUp() public {
         string memory seedPhrase = vm.readFile(".secret");
-        uint256 _userPrivateKey = vm.deriveKey(seedPhrase, 0);
+        uint256 _userPrivateKey = vm.deriveKey(seedPhrase, 1);
         userPrivateKey=_userPrivateKey;
         user = vm.addr(userPrivateKey);
     }
@@ -29,10 +31,12 @@ contract UpdatePrice is Script {
         vm.startBroadcast(userPrivateKey);
         uint price=PriceRouter(priceRouter).getPrice();
         console.log("priceBefore",price/1e18);
-        PriceOracle(priceOracle).setPrice(updatedPRice);
-        price=PriceRouter(priceRouter).getPrice();
-        console.log("priceAfter",price/1e18);
+        // PriceOracle(priceOracle).setPrice(updatedPRice);
+        // price=PriceRouter(priceRouter).getPrice();
+        // console.log("priceAfter",price/1e18);
         vm.stopBroadcast();
     }
     
 }
+
+//forge script script/oracle/UpdatePrice.s.sol:UpdatePrice --rpc-url https://node.botanixlabs.dev --broadcast -vvv --legacy --slow --with-gas-price 7

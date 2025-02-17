@@ -12,7 +12,7 @@ contract PriceRouter is Ownable2Step {
     event UpgradeOracle(address implementation);
 
     uint constant public TARGET_DIGITS = 18; 
-    address priceOracle;
+    address public priceOracle;
 
     constructor (
         address priceOracle_
